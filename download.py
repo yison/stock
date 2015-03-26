@@ -3,10 +3,11 @@ import urllib2
 import operator
 import datetime
 import time
+import socket
 
 
 global exchange_url_map
-exchange_url_map = []
+exchange_url_map = {}
 
 
 def get_stock_codes_by_pre(pre_stock_code):
@@ -46,19 +47,34 @@ def get_urls_of_exchange(exchange):
 
     for x in stock_list:
         urls.append(join_url(x, exchange))
-    exchange_url_map.append(dict(zip(urls, stock_list)))
+    exchange_url_map.update((dict(zip(urls, stock_list))))
     return urls
 
 
 def download(url):
-    try:
-        ret = urllib2.urlopen(url, timeout=120)
-        with open('./stocks/%s' % exchange_url_map[0][url], 'wb') as fd:
-            fd.write(ret.read())  
-        print "Download:%s" % exchange_url_map[0][url]
-    except:
-        print "pass:%s" % url
-        pass
+    headers = {'User-agent': 'Mozilla/5.0'}
+    i = 10
+    while i > 0:
+        try:
+            req = urllib2.Request(url, None, headers)
+            ret = urllib2.urlopen(url, timeout=120)
+            with open('./stocks/%s' % exchange_url_map[url], 'wb') as fd:
+                fd.write(ret.read())  
+        except urllib2.HTTPError, e:
+            if 404 == e.code:
+                print "404:url:%s" % url
+                break
+            else:
+                print "http error:%s; url:%s" % (e.code, url)
+                --i
+                continue 
+        except socket.timeout, e:
+            print "socket error:%s; url:%s" % (e, url)
+            --i
+            continue 
+        else:
+            print "Download:%s" % exchange_url_map[url]
+            break;
 
 
 if __name__ == "__main__":
@@ -70,7 +86,13 @@ if __name__ == "__main__":
     #print exchange_url_map
 
     start_time = datetime.datetime.now()
-    pool = Pool(3)
+    pool = Pool(10)
+    proxy = "proxy-shz.intel.com:911"
+    proxies = {"http":"http://%s" % proxy}
+    proxy_support = urllib2.ProxyHandler(proxies)
+    opener = urllib2.build_opener(proxy_support)
+    urllib2.install_opener(opener)
+     
     ret_list  = pool.map(download, all_urls)
     pool.close()
     pool.join()
