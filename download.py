@@ -72,6 +72,10 @@ def download(url):
             print "socket error:%s; url:%s" % (e, url)
             --i
             continue 
+        except socket.error, e:
+            print "socket error:%s; url:%s" % (e, url)
+            --i
+            continue 
         else:
             print "Download:%s" % exchange_url_map[url]
             break;
@@ -87,11 +91,11 @@ if __name__ == "__main__":
 
     start_time = datetime.datetime.now()
     pool = Pool(10)
-    proxy = "proxy-shz.intel.com:911"
-    proxies = {"http":"http://%s" % proxy}
-    proxy_support = urllib2.ProxyHandler(proxies)
-    opener = urllib2.build_opener(proxy_support)
-    urllib2.install_opener(opener)
+    #proxy = "proxy-shz.intel.com:911"
+    #proxies = {"http":"http://%s" % proxy}
+    #proxy_support = urllib2.ProxyHandler(proxies)
+    #opener = urllib2.build_opener(proxy_support)
+    #urllib2.install_opener(opener)
      
     ret_list  = pool.map(download, all_urls)
     pool.close()
