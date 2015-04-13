@@ -4,6 +4,8 @@ import operator
 import datetime
 import time
 import socket
+import requests
+import traceback
 
 
 global exchange_url_map
@@ -52,33 +54,26 @@ def get_urls_of_exchange(exchange):
 
 
 def download(url):
-    headers = {'User-agent': 'Mozilla/5.0'}
-    i = 10
-    while i > 0:
+    while(True):
+        ret = None
         try:
-            req = urllib2.Request(url, None, headers)
-            ret = urllib2.urlopen(url, timeout=120)
-            with open('./stocks/%s' % exchange_url_map[url], 'wb') as fd:
-                fd.write(ret.read())  
-        except urllib2.HTTPError, e:
-            if 404 == e.code:
-                print "404:url:%s" % url
+            ret = requests.get(url)
+            if 200 == ret.status_code:
+                with open('./stocks/%s' % exchange_url_map[url], 'wb') as fd:
+                    fd.write(ret.text)  
+                print "Download:%s" % exchange_url_map[url]
                 break
-            else:
-                print "http error:%s; url:%s" % (e.code, url)
-                --i
-                continue 
-        except socket.timeout, e:
-            print "socket error:%s; url:%s" % (e, url)
-            --i
-            continue 
-        except socket.error, e:
-            print "socket error:%s; url:%s" % (e, url)
-            --i
-            continue 
-        else:
-            print "Download:%s" % exchange_url_map[url]
-            break;
+            elif 404 == ret.status_code:
+                print "404:url:%s" % (url)
+                break
+            elif 503 == ret.status_code:
+                print "503:url:%s" % (url)
+                continue
+        except Exception, e:
+            print "error happended!url:%s"  % (url)
+            print Exception
+            print e
+            continue
 
 
 if __name__ == "__main__":
