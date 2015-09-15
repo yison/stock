@@ -17,32 +17,24 @@ for code in stock_code_list:
 
     stock_data = pd.read_csv('data/all_trading_data/stock_data/' + code + '.csv', parse_dates=[1])
     stock_data.sort('date', inplace=True)
-
     #KDJ
-    print stock_data['low']
+    #calculate the lowest value in 9 days
     low_list = pd.rolling_min(stock_data['low'], 9)
-    print "low"
-    print low_list
     low_list.fillna(value=pd.expanding_min(stock_data['low']), inplace=True)
-    print low_list
+    #calculate the highest value in 9 days
     high_list = pd.rolling_max(stock_data['high'], 9)
-    print "high"
-    print high_list
     high_list.fillna(value=pd.expanding_max(stock_data['high']), inplace=True)
-    print high_list 
-    print "---------"
-    raise
     rsv = (stock_data['close'] - low_list) / (high_list - low_list) * 100
+
     stock_data['KDJ_K'] = pd.ewma(rsv, com=2)
     stock_data['KDJ_D'] = pd.ewma(stock_data['KDJ_K'], com=2)
     stock_data['KDJ_J'] = 3 * stock_data['KDJ_K'] - 2 * stock_data['KDJ_D']
-
     #j=jin s=si c=cha, pinyin
     stock_data['KDJ_js'] = ''
     kdj_position = stock_data['KDJ_K'] > stock_data['KDJ_D']
     stock_data.loc[kdj_position[(kdj_position == True) & (kdj_position.shift() == False)].index, 'KDJ_js'] = 'jc'
     stock_data.loc[kdj_position[(kdj_position == False) & (kdj_position.shift() == True)].index, 'KDJ_js'] = 'sc'
-
+    raise
     # 
     for n in [1, 2, 3, 5, 10, 20]:
         stock_data[str(n)+'_days_price_change_rario'] = stock_data['adjust_price'].shift(-1*n) / stock_data['adjust_price'] - 1.0
