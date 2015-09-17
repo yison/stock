@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import numpy as np
 import pandas as pd
 
 stock_code_list = []
@@ -10,7 +11,8 @@ for root, dirs, files in os.walk('data/all_trading_data/stock_data'):
                 stock_code_list.append(f.split('.csv')[0])
 
 
-all_stock = pd.DataFrame()
+print "Total stock number is %d" % len(stock_code_list) 
+all_jc_sc_price_change_ratio = pd.DataFrame()
 
 for code in stock_code_list:
     #print code
@@ -35,23 +37,36 @@ for code in stock_code_list:
     #note: the kdj_positon is a Series object not a common object, here use the bool filter use case 
     stock_data.loc[kdj_position[(kdj_position == True) & (kdj_position.shift() == False)].index, 'KDJ_js'] = 'jc'
     stock_data.loc[kdj_position[(kdj_position == False) & (kdj_position.shift() == True)].index, 'KDJ_js'] = 'sc'
-    # 
-    #for n in [1, 2, 3, 5, 10, 20]:
-    #    stock_data[str(n)+'_days_price_change_rario'] = stock_data['adjust_price'].shift(-1*n) / stock_data['adjust_price'] - 1.0
-    #stock_data.dropna(how='any', inplace=True)#delete all the null data row
 
-    stock_data = stock_data[(stock_data['KDJ_js'] == 'jc')]
-    if stock_data.empty:
+    jc_stock_data = stock_data[(stock_data['KDJ_js'] == 'jc')]
+    sc_stock_data = stock_data[(stock_data['KDJ_js'] == 'sc')]
+
+    if jc_stock_data.empty:
         continue
-    all_stock = all_stock.append(stock_data, ignore_index=True)
+    if sc_stock_data.empty:
+	continue
+    
+    if jc_stock_data.shape[0] > sc_stock_data.shape[0]:
+        jc_stock_data = jc_stock_data[:-1]  #delete the last jc
+    elif jc_stock_data.shape[0] < sc_stock_data.shape[0]:
+	sc_stock_data = sc_stock_data[1:]   #delete the first sc
+    else:
+	if jc_stock_data[0:1].index < sc_stock_data[0:1].index:
+            jc_stock_data = jc_stock_data[:-1]
+            sc_stock_data = sc_stock_data[1:]
+    if jc_stock_data.shape[0] != sc_stock_data.shape[0]:
+	print "Total jc number != total sc number"
+	raise
+    jc_stock_data = jc_stock_data.set_index(np.arange(jc_stock_data.shape[0]))
+    sc_stock_data = sc_stock_data.set_index(np.arange(sc_stock_data.shape[0]))
+    change_ratio = sc_stock_data.adjust_price / jc_stock_data.adjust_price - 1.0
+    all_jc_sc_price_change_ratio = all_jc_sc_price_change_ratio.append(pd.DataFrame(change_ratio), ignore_index=True)
 
+#print all_jc_sc_price_change_ratio 
+#print all_jc_sc_price_change_ratio[all_jc_sc_price_change_ratio.adjust_price > 0]
+print "The count number of kdj jincha&sicha in all the stocks of china is %d" % all_jc_sc_price_change_ratio.shape[0]
+print
+print "Rising probability is %.2f%%" % (all_jc_sc_price_change_ratio[all_jc_sc_price_change_ratio.adjust_price > 0].shape[0] / float(all_jc_sc_price_change_ratio.shape[0]) * 100)
 print 
-print "The count of kdj jincha in all the stocks of china is %d" % all_stock.shape[0]
-print 
-
-#for n in [1, 2, 3, 5, 10, 20]:
-#    print "金叉之后的%d个交易日内，" % n,
-#    print "平均涨幅为%.2f%%，" % (all_stock[str(n)+'_days_price_change_rario'].mean() * 100),
-#    print "其中上涨股票的比例是%.2f%%。" % \
-#          (all_stock[all_stock[str(n)+'_days_price_change_rario'] > 0].shape[0]/float(all_stock.shape[0]) * 100)
-#    print
+print "Rising scope is %s" % (all_jc_sc_price_change_ratio.mean() * 100)
+print
