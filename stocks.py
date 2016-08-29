@@ -6,6 +6,12 @@ import pandas as pd
 from multiprocessing import Pool
 import multiprocessing
 import tools
+import pymongo
+from pymongo import MongoClient
+import json
+from db import DataBase
+
+    
 
 def format_time(org_time, input_format="%Y%m%d", output_format="%Y-%m-%d"):
     time_array = time.strptime(org_time, input_format)  
@@ -35,6 +41,7 @@ def download_hist_data(stock_tuple):
     stock_code = stock_tuple[0]
     time_to_market = stock_tuple[1]
     print stock_code
+    db = MongoClient('localhost', 10001)
     count = 10
     while(count > 0):
         try:
@@ -48,15 +55,25 @@ def download_hist_data(stock_tuple):
             print e
             continue
         else:
-            stock_df.to_csv('data/history/' + stock_code)
+            #stock_df.to_csv('data/history/' + stock_code)
+            stock_df['date'] = stock_df.index.strftime('%Y%m%d').astype('int')
+            try:
+                db.stocks[stock_code].insert(json.loads(stock_df.to_json(orient='records')))
+                db.stocks[stock_code].create_index([('date', pymongo.DESCENDING)], unique=True)
+            except Exception, e:
+                print e
+
             print stock_code + ":Done!"
+            db.close()
             return
     print "@@:" + stock_code + ": is not finished"
+    db.close()
 
 def download_data_by_time(stock_tuple):
     stock_code = stock_tuple[0]
     start_time = stock_tuple[1]
     end_time = stock_tuple[2]
+    db = MongoClient('localhost', 10001)
     print stock_code 
     count = 10
     while(count > 0):
@@ -71,13 +88,17 @@ def download_data_by_time(stock_tuple):
             print e
             continue
         else:
-            stock_df.to_csv('data1/history/' + stock_code, mode='a', header=None)
+            #stock_df.to_csv('data1/history/' + stock_code, mode='a', header=None)
+            stock_df['date'] = stock_df.index.strftime('%Y%m%d').astype('int')
+            try:
+                db.stocks[stock_code].insert(json.loads(stock_df.to_json(orient='records')))
+            except Exception, e:
+                print e
             print stock_code + ":Done!"
-            raise
+            db.close()
             return
     print "@@:" + stock_code + ": is not finished"
- 
-    pass
+    db.close() 
 
 def filter_df_col_zero(df, column_name):
     return df[df[column_name] > 0][column_name] 
@@ -104,19 +125,19 @@ def multi_append_data(start_time, end_time):
     pool.map(download_data_by_time, start_end_time_list)
     pool.close()
     pool.join()
+
  
 if __name__ == "__main__":
     #get_stocks() 
     #download_all_history_data()
-    
     start_time = datetime.datetime.now()
     #------download history data in parallel
-    #multi_download_hist_data()
+    multi_download_hist_data()
     #------download history data in parallel
 
     #------append data by time in parallel
-    #start = '2016-08-12'
-    #end = '2016-08-17'
+    #start = '2016-08-26'
+    #end = '2016-08-26'
     #multi_append_data(start, end)
     #------append data by time in parallel
 

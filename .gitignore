@@ -1,3 +1,4 @@
 data/*
 *.pyc
-test.log
+*.log
+*.out
