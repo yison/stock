@@ -9,7 +9,6 @@ import tools
 import pymongo
 from pymongo import MongoClient
 import json
-from db import DataBase
 
     
 
@@ -22,6 +21,15 @@ def get_sorted_stocks():
     sorted_stocks_df = stocks_df.sort_index()
     sorted_stocks_df.to_csv('data/stocks')    
     return sorted_stocks_df
+
+def get_indexes():
+    df = ts.get_index()
+    df.to_csv('data/indexes') 
+    return df
+
+def get_index_codes():
+    df = ts.get_index()
+    return df['code']
 
 def download_all_history_data():
     stocks = get_sorted_stocks()    
@@ -100,6 +108,49 @@ def download_data_by_time(stock_tuple):
     print "@@:" + stock_code + ": is not finished"
     db.close() 
 
+def download_history_data(item):
+    ### item is a tuple
+    ###
+    ###
+    code = item[0]
+    start_time = item[1]
+    end_time = item[2]
+    index = item[3]
+    db = MongoClient('localhost', 10001)
+    count = 10
+    while(count > 0):
+        try:
+            if index is True:
+                df = ts.get_h_data(code, index=True, start=start_time, retry_count=10)
+            else:
+                df = ts.get_h_data(code, start=start_time, end=end_time, retry_count=10)
+            if df is None:
+                count = count - 1
+                continue
+        except Exception, e:
+            print e
+            count = count -1
+            continue
+        else:
+            df['date'] = df.index.strftime('%Y%m%d').astype('int')
+            try:
+                if index is True:
+                    db.indexes[code].insert(json.loads(df.to_json(orient='records')))
+                    db.indexes[code].create_index([('date', pymongo.DESCENDING)], unique=True)
+                else:
+                    db.stocks[code].insert(json.loads(df.to_json(orient='records')))
+                    db.stocks[code].create_index([('date', pymongo.DESCENDING)], unique=True)
+            except Exception, e:
+                print e
+                count = count - 1
+                continue
+            else:
+                print code + ":Done!"
+                db.close()
+                return
+    print "@@:" + code + ": is not finished"
+    db.close() 
+
 def filter_df_col_zero(df, column_name):
     return df[df[column_name] > 0][column_name] 
      
@@ -114,6 +165,23 @@ def multi_download_hist_data():
     pool.close()
     pool.join()
 
+def multi_download_indexes_hist_data():
+    pool = Pool(16)
+    #codes = get_index_codes()
+    codes = ['000001', '399001', '399005', '399006'] 
+    start_time_list = ['1990-12-18', '1991-04-02', '2008-06-29', '2010-05-30']
+    end_time = None
+    index_tag = True
+    length = len(codes)
+    #start_time_list = tools.init_list(start_time, codes.shape[0]) 
+    end_time_list = tools.init_list(end_time, length) 
+    index_tag_list = tools.init_list(index_tag, length)
+    tuple_list = zip(codes, start_time_list, end_time_list, index_tag_list)
+    pool.map(download_history_data, tuple_list)
+    pool.close()
+    pool.join()
+    
+    
 def multi_append_data(start_time, end_time):
     pool = Pool(16)
     stocks = get_sorted_stocks()
@@ -132,7 +200,7 @@ if __name__ == "__main__":
     #download_all_history_data()
     start_time = datetime.datetime.now()
     #------download history data in parallel
-    multi_download_hist_data()
+    #multi_download_hist_data()
     #------download history data in parallel
 
     #------append data by time in parallel
@@ -140,6 +208,15 @@ if __name__ == "__main__":
     #end = '2016-08-26'
     #multi_append_data(start, end)
     #------append data by time in parallel
+
+    #------download indexes hisroty data in parallel
+    #download_history_data(('000001', '1990-12-17', None, True))
+    #multi_download_indexes_hist_data()
+    #------download indexes hisroty data in parallel
+
+    #-----test delta dates
+    #tools.get_delta_dates('20160810','20160815')
+    #-----test delta dates
 
     end_time = datetime.datetime.now()
     print start_time
