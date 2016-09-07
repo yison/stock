@@ -9,6 +9,7 @@ import tools
 import pymongo
 from pymongo import MongoClient
 import json
+from db import engine 
 
     
 
@@ -49,7 +50,8 @@ def download_hist_data(stock_tuple):
     stock_code = stock_tuple[0]
     time_to_market = stock_tuple[1]
     print stock_code
-    db = MongoClient('localhost', 10001)
+    #db = MongoClient('localhost', 10001)
+    db = engine.get_db_client()
     count = 10
     while(count > 0):
         try:
@@ -72,7 +74,7 @@ def download_hist_data(stock_tuple):
                 print e
 
             print stock_code + ":Done!"
-            db.close()
+            #db.close()
             return
     print "@@:" + stock_code + ": is not finished"
     db.close()
@@ -156,7 +158,7 @@ def filter_df_col_zero(df, column_name):
      
 def multi_download_hist_data():
     #pool = Pool(multiprocessing.cpu_count())
-    pool = Pool(16)
+    pool = Pool(128)
     stocks = get_sorted_stocks()    
     stock_list = filter_df_col_zero(stocks, 'timeToMarket') 
     print stock_list.shape
@@ -200,7 +202,7 @@ if __name__ == "__main__":
     #download_all_history_data()
     start_time = datetime.datetime.now()
     #------download history data in parallel
-    #multi_download_hist_data()
+    multi_download_hist_data()
     #------download history data in parallel
 
     #------append data by time in parallel
