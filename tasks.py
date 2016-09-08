@@ -1,5 +1,6 @@
 #!/opt/anaconda2/bin/python
 from celery import Celery
+from celery.utils.log import get_task_logger
 import time
 import datetime
 import tushare as ts
@@ -12,6 +13,8 @@ from pymongo import MongoClient
 import json
 from db import engine
 
+
+logger = get_task_logger(__name__)
 app = Celery('tasks', broker='amqp://guest@10.239.131.155//')
 app.config_from_object('celeryconfig')
 
@@ -27,7 +30,7 @@ def add(x, y):
 def download_hist_data(stock_tuple):
     stock_code = stock_tuple[0]
     time_to_market = stock_tuple[1]
-    print stock_code
+    #print stock_code
     db = engine.get_db_client()
     count = 10
     while(count > 0):
@@ -35,11 +38,11 @@ def download_hist_data(stock_tuple):
             stock_df = ts.get_h_data(stock_code, start=format_time(str(time_to_market)),
                                      retry_count=20)
             if stock_df is None:
-                print stock_code + ": timeout after retrying 20 times! reget again!"
+                #print stock_code + ": timeout after retrying 20 times! reget again!"
                 count = count - 1
                 continue
         except Exception, e:
-            print e
+            logger.error(e)
             continue
         else:
             #stock_df.to_csv('data/history/' + stock_code)
@@ -48,9 +51,10 @@ def download_hist_data(stock_tuple):
                 db.stocks[stock_code].insert(json.loads(stock_df.to_json(orient='records')))
                 db.stocks[stock_code].create_index([('date', pymongo.DESCENDING)], unique=True)
             except Exception, e:
-                print e
+                logger.error(e) 
 
-            print stock_code + ":Done!"
+            #print stock_code + ":Done!"
             return
-    print "@@:" + stock_code + ": is not finished"
+    #print "@@:" + stock_code + ": is not finished"
+    logger.eror('{0} is not finished'.format(stock_code))
 

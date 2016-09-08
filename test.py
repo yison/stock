@@ -43,8 +43,10 @@ if __name__=="__main__":
     start_time = datetime.datetime.now()
 
     for i in range(len(time_to_market_list)):
-        download_hist_data.delay(time_to_market_list[i])
+        result = download_hist_data.delay(time_to_market_list[i])
 
+    while not result.ready():
+        time.sleep(30)
     end_time = datetime.datetime.now()
     print start_time
     print end_time
