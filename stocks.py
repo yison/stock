@@ -9,14 +9,27 @@ import tools
 import pymongo
 from pymongo import MongoClient
 import json
-from db import engine 
-
+from db import engine
     
 
 def format_time(org_time, input_format="%Y%m%d", output_format="%Y-%m-%d"):
     time_array = time.strptime(org_time, input_format)  
     return time.strftime(output_format, time_array)
 
+def get_filter_list():
+    return ['000033', '600710', '600732']
+
+def filter_stocks(df, filter_list):
+    df.drop(filter_list, inplace=True)
+
+def get_filtered_sorted_stocks():
+    stocks_df = ts.get_stock_basics() 
+    filter_list = get_filter_list()
+    filter_stocks(stocks_df, filter_list)
+    sorted_stocks_df = stocks_df.sort_index()
+    sorted_stocks_df.to_csv('data/stocks')    
+    return sorted_stocks_df
+    
 def get_sorted_stocks():
     stocks_df = ts.get_stock_basics() 
     sorted_stocks_df = stocks_df.sort_index()
@@ -33,7 +46,7 @@ def get_index_codes():
     return df['code']
 
 def download_all_history_data():
-    stocks = get_sorted_stocks()    
+    stocks = get_filtered_sorted_stocks()    
     start_time = time.time()
     for idx in stocks.index:
         time_to_market = stocks.ix[idx]['timeToMarket']
@@ -50,7 +63,6 @@ def download_hist_data(stock_tuple):
     stock_code = stock_tuple[0]
     time_to_market = stock_tuple[1]
     print stock_code
-    #db = MongoClient('localhost', 10001)
     db = engine.get_db_client()
     count = 10
     while(count > 0):
@@ -74,16 +86,15 @@ def download_hist_data(stock_tuple):
                 print e
 
             print stock_code + ":Done!"
-            #db.close()
             return
     print "@@:" + stock_code + ": is not finished"
-    db.close()
 
 def download_data_by_time(stock_tuple):
     stock_code = stock_tuple[0]
     start_time = stock_tuple[1]
     end_time = stock_tuple[2]
-    db = MongoClient('localhost', 10001)
+    #db = MongoClient('localhost', 10001)
+    db = engine.get_db_client()
     print stock_code 
     count = 10
     while(count > 0):
@@ -105,10 +116,8 @@ def download_data_by_time(stock_tuple):
             except Exception, e:
                 print e
             print stock_code + ":Done!"
-            db.close()
             return
     print "@@:" + stock_code + ": is not finished"
-    db.close() 
 
 def download_history_data(item):
     ### item is a tuple
@@ -118,7 +127,7 @@ def download_history_data(item):
     start_time = item[1]
     end_time = item[2]
     index = item[3]
-    db = MongoClient('localhost', 10001)
+    db = engine.get_db_client()
     count = 10
     while(count > 0):
         try:
@@ -148,18 +157,17 @@ def download_history_data(item):
                 continue
             else:
                 print code + ":Done!"
-                db.close()
                 return
     print "@@:" + code + ": is not finished"
-    db.close() 
 
 def filter_df_col_zero(df, column_name):
     return df[df[column_name] > 0][column_name] 
      
 def multi_download_hist_data():
     #pool = Pool(multiprocessing.cpu_count())
-    pool = Pool(128)
-    stocks = get_sorted_stocks()    
+    #pool = Pool(512)
+    pool = Pool(144)
+    stocks = get_filtered_sorted_stocks()    
     stock_list = filter_df_col_zero(stocks, 'timeToMarket') 
     print stock_list.shape
     time_to_market_list = zip(stock_list.index, stock_list.values)
@@ -186,7 +194,7 @@ def multi_download_indexes_hist_data():
     
 def multi_append_data(start_time, end_time):
     pool = Pool(16)
-    stocks = get_sorted_stocks()
+    stocks = get_filtered_sorted_stocks()
     stock_list = filter_df_col_zero(stocks, 'timeToMarket')
     print stock_list.shape
     start_time_list = tools.init_list(start_time, stock_list.shape[0])
