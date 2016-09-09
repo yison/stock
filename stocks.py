@@ -10,6 +10,7 @@ import pymongo
 from pymongo import MongoClient
 import json
 from db import engine
+from tasks import download_total_hist_data
     
 
 def format_time(org_time, input_format="%Y%m%d", output_format="%Y-%m-%d"):
@@ -175,6 +176,18 @@ def multi_download_hist_data():
     pool.close()
     pool.join()
 
+def download_total_hist_data_task():
+    stocks = get_filtered_sorted_stocks()
+    stock_list = filter_df_col_zero(stocks, 'timeToMarket')
+    print stock_list.shape
+    time_to_market_list = zip(stock_list.index, stock_list.values)
+
+    for i in range(len(time_to_market_list)):
+        result = download_total_hist_data.delay(time_to_market_list[i])
+
+    while not result.ready():
+        time.sleep(30)
+
 def multi_download_indexes_hist_data():
     pool = Pool(16)
     #codes = get_index_codes()
@@ -204,14 +217,26 @@ def multi_append_data(start_time, end_time):
     pool.close()
     pool.join()
 
+def append_data_by_time(start_time, end_time):
+    stocks = get_filtered_sorted_stocks()
+    stock_list = filter_df_col_zero(stocks, 'timeToMarket')
+    print stock_list.shape
+    start_time_list = tools.init_list(start_time, stock_list.shape[0])
+    end_time_list = tools.init_list(end_time, stock_list.shape[0])
+    start_end_time_list = zip(stock_list.index, start_time_list, end_time_list)
+    
  
 if __name__ == "__main__":
     #get_stocks() 
     #download_all_history_data()
     start_time = datetime.datetime.now()
     #------download history data in parallel
-    multi_download_hist_data()
+    #multi_download_hist_data()
     #------download history data in parallel
+
+    #------download total history data by celery 
+    #download_total_hist_data_task()
+    #------download total history data by celery 
 
     #------append data by time in parallel
     #start = '2016-08-26'
@@ -227,7 +252,6 @@ if __name__ == "__main__":
     #-----test delta dates
     #tools.get_delta_dates('20160810','20160815')
     #-----test delta dates
-
     end_time = datetime.datetime.now()
     print start_time
     print end_time

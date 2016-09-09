@@ -23,39 +23,34 @@ def format_time(org_time, input_format="%Y%m%d", output_format="%Y-%m-%d"):
     return time.strftime(output_format, time_array)
 
 @app.task
-def add(x, y):
-    return x + y
-
-@app.task
-def download_hist_data(stock_tuple):
-    stock_code = stock_tuple[0]
-    time_to_market = stock_tuple[1]
-    #print stock_code
-    db = engine.get_db_client()
+def download_data_by_time(code, start, end=None):
+    start_time = format_time(str(start))
+    end_time = format_time(str(end)) if end else None
+    #db = engine.get_db_client()
     count = 10
     while(count > 0):
         try:
-            stock_df = ts.get_h_data(stock_code, start=format_time(str(time_to_market)),
-                                     retry_count=20)
+            stock_df = ts.get_h_data(code, start=start_time,
+                                    end=end_time, retry_count=20)
             if stock_df is None:
-                #print stock_code + ": timeout after retrying 20 times! reget again!"
-                logger.error('{0}: timeout after retrying 20 times! reget again!'.format(stock_code))
+                #print code + ": timeout after retrying 20 times! reget again!"
+                logger.error('{0}: timeout after retrying 20 times! reget again!'.format(code))
                 count = count - 1
                 continue
         except Exception, e:
             logger.error(e)
             continue
         else:
-            #stock_df.to_csv('data/history/' + stock_code)
-            stock_df['date'] = stock_df.index.strftime('%Y%m%d').astype('int')
-            try:
-                db.stocks[stock_code].insert(json.loads(stock_df.to_json(orient='records')))
-                db.stocks[stock_code].create_index([('date', pymongo.DESCENDING)], unique=True)
-            except Exception, e:
-                logger.error(e) 
+            #stock_df.to_csv('data/history/' + code)
+            #stock_df['date'] = stock_df.index.strftime('%Y%m%d').astype('int')
+            #try:
+            #    db.stocks[code].insert(json.loads(stock_df.to_json(orient='records')))
+            #    db.stocks[code].create_index([('date', pymongo.DESCENDING)], unique=True)
+            #except Exception, e:
+            #    logger.error(e) 
 
-            #print stock_code + ":Done!"
+            #print code + ":Done!"
             return
-    #print "@@:" + stock_code + ": is not finished"
-    logger.error('{0} is not finished'.format(stock_code))
+    #print "@@:" + code + ": is not finished"
+    logger.error('{0} is not finished'.format(code))
 

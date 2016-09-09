@@ -1,4 +1,3 @@
-from celery import Celery
 import time
 import datetime
 import tushare as ts
@@ -10,7 +9,7 @@ import pymongo
 from pymongo import MongoClient
 import json
 from db import engine
-from tasks import download_hist_data 
+from tasks import download_data_by_time 
 
 
 def format_time(org_time, input_format="%Y%m%d", output_format="%Y-%m-%d"):
@@ -42,8 +41,9 @@ if __name__=="__main__":
 
     start_time = datetime.datetime.now()
 
-    for i in range(len(time_to_market_list)):
-        result = download_hist_data.delay(time_to_market_list[i])
+    for i in range(len(stock_list)):
+        result = download_data_by_time.delay(stock_list.index[i],
+                                            stock_list[i])
 
     while not result.ready():
         time.sleep(30)
