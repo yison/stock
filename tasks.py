@@ -56,5 +56,5 @@ def download_hist_data(stock_tuple):
             #print stock_code + ":Done!"
             return
     #print "@@:" + stock_code + ": is not finished"
-    logger.eror('{0} is not finished'.format(stock_code))
+    logger.error('{0} is not finished'.format(stock_code))
 

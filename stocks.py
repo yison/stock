@@ -62,7 +62,7 @@ def download_all_history_data():
 def download_hist_data(stock_tuple):
     stock_code = stock_tuple[0]
     time_to_market = stock_tuple[1]
-    print stock_code
+    #print stock_code
     db = engine.get_db_client()
     count = 10
     while(count > 0):
@@ -70,7 +70,7 @@ def download_hist_data(stock_tuple):
             stock_df = ts.get_h_data(stock_code, start=format_time(str(time_to_market)),
                                      retry_count=20)
             if stock_df is None:
-                print stock_code + ": timeout after retrying 20 times! reget again!"
+                #print stock_code + ": timeout after retrying 20 times! reget again!"
                 count = count - 1
                 continue 
         except Exception, e:
@@ -85,9 +85,9 @@ def download_hist_data(stock_tuple):
             except Exception, e:
                 print e
 
-            print stock_code + ":Done!"
+            #print stock_code + ":Done!"
             return
-    print "@@:" + stock_code + ": is not finished"
+    #print "@@:" + stock_code + ": is not finished"
 
 def download_data_by_time(stock_tuple):
     stock_code = stock_tuple[0]
@@ -166,7 +166,7 @@ def filter_df_col_zero(df, column_name):
 def multi_download_hist_data():
     #pool = Pool(multiprocessing.cpu_count())
     #pool = Pool(512)
-    pool = Pool(144)
+    pool = Pool(256)
     stocks = get_filtered_sorted_stocks()    
     stock_list = filter_df_col_zero(stocks, 'timeToMarket') 
     print stock_list.shape
