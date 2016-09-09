@@ -39,6 +39,7 @@ def download_hist_data(stock_tuple):
                                      retry_count=20)
             if stock_df is None:
                 #print stock_code + ": timeout after retrying 20 times! reget again!"
+                logger.error('{0}: timeout after retrying 20 times! reget again!'.format(stock_code))
                 count = count - 1
                 continue
         except Exception, e:
