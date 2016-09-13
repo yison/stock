@@ -182,10 +182,11 @@ def download_total_hist_data_task():
     stock_list = filter_df_col_zero(stocks, 'timeToMarket')
     print stock_list.shape
 
-    for i in range(10):
-        result = chain(download_data_by_time.s(stock_list.index[i],
-                                            stock_list[i]) | 
-            create_date_desc_index_in_stock.s(stock_list.index[i]))().get() 
+    for i in range(len(stock_list)):
+        mychain = chain(download_data_by_time.s(stock_list.index[i],
+                                            stock_list[i]), 
+            create_date_desc_index_in_stock.s()) 
+        result = mychain.apply_async()
 
     while not result.ready():
         time.sleep(30)

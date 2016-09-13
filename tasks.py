@@ -22,7 +22,7 @@ def format_time(org_time, input_format="%Y%m%d", output_format="%Y-%m-%d"):
     time_array = time.strptime(org_time, input_format)
     return time.strftime(output_format, time_array)
 
-@app.task
+@app.task(queue='for_task_A')
 def download_data_by_time(code, start, end=None):
     start_time = format_time(str(start))
     end_time = format_time(str(end)) if end else None
@@ -48,14 +48,14 @@ def download_data_by_time(code, start, end=None):
             #    db.stocks[code].create_index([('date', pymongo.DESCENDING)], unique=True)
             except Exception, e:
                 logger.error(e) 
-
+            #logger.info('{0} : Done!'.format(code))
+            return code 
             #print code + ":Done!"
     #print "@@:" + code + ": is not finished"
     logger.error('{0} is not finished'.format(code))
 
-@app.task
+@app.task(queue='for_task_B')
 def create_date_desc_index_in_stock(table):
-    logger.error(table)
     db = engine.get_db_client()
     if table:
         try:

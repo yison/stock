@@ -1,4 +1,4 @@
 #!/bin/bash
 
-nohup celery -A tasks worker --loglevel=error -c 768 -f worker.log -n workerA -Q for_task_A &
-nohup celery -A tasks worker --loglevel=error -c 256 -f worker.log -n workerB -Q for_task_B &
+nohup celery -A tasks worker --loglevel=info -c 768 -f workerA.log -Q for_task_A &
+nohup celery -A tasks worker --loglevel=info -c 256 -f workerB.log -Q for_task_B &
