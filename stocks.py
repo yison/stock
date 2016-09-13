@@ -10,7 +10,8 @@ import pymongo
 from pymongo import MongoClient
 import json
 from db import engine
-from tasks import download_total_hist_data
+from tasks import * 
+from celery import chain
     
 
 def format_time(org_time, input_format="%Y%m%d", output_format="%Y-%m-%d"):
@@ -79,46 +80,46 @@ def download_hist_data(stock_tuple):
             continue
         else:
             #stock_df.to_csv('data/history/' + stock_code)
-            stock_df['date'] = stock_df.index.strftime('%Y%m%d').astype('int')
-            try:
-                db.stocks[stock_code].insert(json.loads(stock_df.to_json(orient='records')))
-                db.stocks[stock_code].create_index([('date', pymongo.DESCENDING)], unique=True)
-            except Exception, e:
-                print e
+            #stock_df['date'] = stock_df.index.strftime('%Y%m%d').astype('int')
+            #try:
+            #    db.stocks[stock_code].insert(json.loads(stock_df.to_json(orient='records')))
+            #    db.stocks[stock_code].create_index([('date', pymongo.DESCENDING)], unique=True)
+            #except Exception, e:
+            #    print e
 
             #print stock_code + ":Done!"
             return
     #print "@@:" + stock_code + ": is not finished"
 
-def download_data_by_time(stock_tuple):
-    stock_code = stock_tuple[0]
-    start_time = stock_tuple[1]
-    end_time = stock_tuple[2]
-    #db = MongoClient('localhost', 10001)
-    db = engine.get_db_client()
-    print stock_code 
-    count = 10
-    while(count > 0):
-        try:
-            stock_df = ts.get_h_data(stock_code, start=start_time, end=end_time,
-                                     retry_count=20)
-            if stock_df is None:
-                print stock_code + ": timeout after retrying 20 times! reget again!"
-                count = count - 1
-                continue
-        except Exception, e:
-            print e
-            continue
-        else:
-            #stock_df.to_csv('data1/history/' + stock_code, mode='a', header=None)
-            stock_df['date'] = stock_df.index.strftime('%Y%m%d').astype('int')
-            try:
-                db.stocks[stock_code].insert(json.loads(stock_df.to_json(orient='records')))
-            except Exception, e:
-                print e
-            print stock_code + ":Done!"
-            return
-    print "@@:" + stock_code + ": is not finished"
+#def download_data_by_time(stock_tuple):
+#    stock_code = stock_tuple[0]
+#    start_time = stock_tuple[1]
+#    end_time = stock_tuple[2]
+#    #db = MongoClient('localhost', 10001)
+#    db = engine.get_db_client()
+#    print stock_code 
+#    count = 10
+#    while(count > 0):
+#        try:
+#            stock_df = ts.get_h_data(stock_code, start=start_time, end=end_time,
+#                                     retry_count=20)
+#            if stock_df is None:
+#                print stock_code + ": timeout after retrying 20 times! reget again!"
+#                count = count - 1
+#                continue
+#        except Exception, e:
+#            print e
+#            continue
+#        else:
+#            #stock_df.to_csv('data1/history/' + stock_code, mode='a', header=None)
+#            stock_df['date'] = stock_df.index.strftime('%Y%m%d').astype('int')
+#            try:
+#                db.stocks[stock_code].insert(json.loads(stock_df.to_json(orient='records')))
+#            except Exception, e:
+#                print e
+#            print stock_code + ":Done!"
+#            return
+#    print "@@:" + stock_code + ": is not finished"
 
 def download_history_data(item):
     ### item is a tuple
@@ -167,7 +168,7 @@ def filter_df_col_zero(df, column_name):
 def multi_download_hist_data():
     #pool = Pool(multiprocessing.cpu_count())
     #pool = Pool(512)
-    pool = Pool(256)
+    pool = Pool(768)
     stocks = get_filtered_sorted_stocks()    
     stock_list = filter_df_col_zero(stocks, 'timeToMarket') 
     print stock_list.shape
@@ -180,10 +181,11 @@ def download_total_hist_data_task():
     stocks = get_filtered_sorted_stocks()
     stock_list = filter_df_col_zero(stocks, 'timeToMarket')
     print stock_list.shape
-    time_to_market_list = zip(stock_list.index, stock_list.values)
 
-    for i in range(len(time_to_market_list)):
-        result = download_total_hist_data.delay(time_to_market_list[i])
+    for i in range(10):
+        result = chain(download_data_by_time.s(stock_list.index[i],
+                                            stock_list[i]) | 
+            create_date_desc_index_in_stock.s(stock_list.index[i]))().get() 
 
     while not result.ready():
         time.sleep(30)
@@ -205,17 +207,17 @@ def multi_download_indexes_hist_data():
     pool.join()
     
     
-def multi_append_data(start_time, end_time):
-    pool = Pool(16)
-    stocks = get_filtered_sorted_stocks()
-    stock_list = filter_df_col_zero(stocks, 'timeToMarket')
-    print stock_list.shape
-    start_time_list = tools.init_list(start_time, stock_list.shape[0])
-    end_time_list = tools.init_list(end_time, stock_list.shape[0])
-    start_end_time_list = zip(stock_list.index, start_time_list, end_time_list)
-    pool.map(download_data_by_time, start_end_time_list)
-    pool.close()
-    pool.join()
+#def multi_append_data(start_time, end_time):
+#    pool = Pool(16)
+#    stocks = get_filtered_sorted_stocks()
+#    stock_list = filter_df_col_zero(stocks, 'timeToMarket')
+#    print stock_list.shape
+#    start_time_list = tools.init_list(start_time, stock_list.shape[0])
+#    end_time_list = tools.init_list(end_time, stock_list.shape[0])
+#    start_end_time_list = zip(stock_list.index, start_time_list, end_time_list)
+#    pool.map(download_data_by_time, start_end_time_list)
+#    pool.close()
+#    pool.join()
 
 def append_data_by_time(start_time, end_time):
     stocks = get_filtered_sorted_stocks()
@@ -235,7 +237,7 @@ if __name__ == "__main__":
     #------download history data in parallel
 
     #------download total history data by celery 
-    #download_total_hist_data_task()
+    download_total_hist_data_task()
     #------download total history data by celery 
 
     #------append data by time in parallel

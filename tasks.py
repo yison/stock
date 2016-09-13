@@ -26,8 +26,8 @@ def format_time(org_time, input_format="%Y%m%d", output_format="%Y-%m-%d"):
 def download_data_by_time(code, start, end=None):
     start_time = format_time(str(start))
     end_time = format_time(str(end)) if end else None
-    #db = engine.get_db_client()
-    count = 10
+    db = engine.get_db_client()
+    count = 1
     while(count > 0):
         try:
             stock_df = ts.get_h_data(code, start=start_time,
@@ -42,15 +42,23 @@ def download_data_by_time(code, start, end=None):
             continue
         else:
             #stock_df.to_csv('data/history/' + code)
-            #stock_df['date'] = stock_df.index.strftime('%Y%m%d').astype('int')
-            #try:
-            #    db.stocks[code].insert(json.loads(stock_df.to_json(orient='records')))
+            stock_df['date'] = stock_df.index.strftime('%Y%m%d').astype('int')
+            try:
+                db.stocks[code].insert(json.loads(stock_df.to_json(orient='records')))
             #    db.stocks[code].create_index([('date', pymongo.DESCENDING)], unique=True)
-            #except Exception, e:
-            #    logger.error(e) 
+            except Exception, e:
+                logger.error(e) 
 
             #print code + ":Done!"
-            return
     #print "@@:" + code + ": is not finished"
     logger.error('{0} is not finished'.format(code))
 
+@app.task
+def create_date_desc_index_in_stock(table):
+    logger.error(table)
+    db = engine.get_db_client()
+    if table:
+        try:
+            db.stocks[table].create_index([('date', pymongo.DESCENDING)], unique=True)
+        except Exception, e:
+            logger.error(e)

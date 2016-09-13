@@ -34,12 +34,11 @@ def get_filtered_sorted_stocks():
     return sorted_stocks_df
 
 if __name__=="__main__":
+    start_time = datetime.datetime.now()
+
     stocks = get_filtered_sorted_stocks()
     stock_list = filter_df_col_zero(stocks, 'timeToMarket')
     print stock_list.shape
-    time_to_market_list = zip(stock_list.index, stock_list.values)    
-
-    start_time = datetime.datetime.now()
 
     for i in range(len(stock_list)):
         result = download_data_by_time.delay(stock_list.index[i],
