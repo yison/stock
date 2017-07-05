@@ -15,7 +15,7 @@ from db import engine
 
 
 logger = get_task_logger(__name__)
-app = Celery('tasks', broker='amqp://guest@10.239.131.155//')
+app = Celery('tasks', broker='amqp://guest@10.239.131.157//')
 app.config_from_object('celeryconfig')
 
 def format_time(org_time, input_format="%Y%m%d", output_format="%Y-%m-%d"):
@@ -30,8 +30,9 @@ def download_data_by_time(code, start, end=None):
     count = 1
     while(count > 0):
         try:
-            stock_df = ts.get_h_data(code, start=start_time,
+            stock_df = ts.get_k_data(code, start=start_time,
                                     end=end_time, retry_count=20)
+            stock_df = stock_df.set_index(pd.DatetimeIndex(stock_df['date']))
             if stock_df is None:
                 #print code + ": timeout after retrying 20 times! reget again!"
                 logger.error('{0}: timeout after retrying 20 times! reget again!'.format(code))
@@ -42,9 +43,10 @@ def download_data_by_time(code, start, end=None):
             continue
         else:
             #stock_df.to_csv('data/history/' + code)
-            stock_df['date'] = stock_df.index.strftime('%Y%m%d').astype('int')
+            #stock_df['date'] = stock_df.index.strftime('%Y%m%d').astype('int')
             try:
-                db.stocks[code].insert(json.loads(stock_df.to_json(orient='records')))
+                db.write_points(stock_df, code, tags={'code':code})
+                #db.stocks[code].insert(json.loads(stock_df.to_json(orient='records')))
             #    db.stocks[code].create_index([('date', pymongo.DESCENDING)], unique=True)
             except Exception, e:
                 logger.error(e) 
@@ -62,3 +64,24 @@ def create_date_desc_index_in_stock(table):
             db.stocks[table].create_index([('date', pymongo.DESCENDING)], unique=True)
         except Exception, e:
             logger.error(e)
+
+@app.task(queue='for_realtime')
+def download_data_by_realtime(code):
+    db = engine.get_db_client()
+    try:
+        stock_df = ts.get_realtime_quotes(code)
+        stock_df = stock_df.drop('name', 1)
+        stock_df = stock_df.set_index(pd.DatetimeIndex(stock_df['time']))
+        ##TODO:
+        #stock_df = stock_df.drop('name', 1)
+        #stock_df = stock_df.set_index(pd.DatetimeIndex(stock_df['time']))
+        #print("@@@@@", stock_df); 
+    except Exception, e:
+        logger.error(e)
+    try:
+        db.write_points(stock_df, code, tags={
+                'code': code
+                }, database='today')
+    except Exception, e:
+        logger.error(e)
+        return

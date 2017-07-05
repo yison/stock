@@ -53,13 +53,43 @@ def download_data_by_time(code, start, end=None):
             continue
         else:
             #print datetime.datetime.now()
+            #print datetime.datetime.now()
             #stock_df['date'] = stock_df.index.strftime('%Y%m%d').astype('int')
             try:
-                #stock_df.to_csv('/var/lib/influxdb/ssd/stocks/data/history/' + code)
+                stock_df.to_csv('/var/lib/influxdb/ssd/stocks/data/history/' + code)
                 #print stock_df.to_json()
+                #,date,open,close,high,low,volume,code
+                ################################
+                 
+                json_body = []
+                for row in stock_df.itertuples():
+                    print row
+                    dict_body = { 
+                        "measurement": row.code,
+                        "time": row.date,
+                        #"time": datetime.datetime.now(),
+                        "fields": {
+                            "date": row.date,
+                            "open": row.open,
+                            "close": row.close,
+                            "high": row.high,
+                            "low": row.low,
+                            "volume": int(row.volume)
+                        }
+                    }
+                    json_body.append(dict_body);
+                print json_body
+                #print datetime.datetime.now()
+                ##db.write_points(json_body, time_precision='m', tags={"code": code})
+                #db.write_points(json_body, tags={"code": code})
+                #print datetime.datetime.now()
+                ########################################
+                ###################
+                # dataframe
                 print datetime.datetime.now()
                 db.write_points(stock_df, code, tags={'code':code}) 
-                #db.write_points(stock_df, code, tags={'code':code}, batch_size=1024)
+                ##db.write_points(stock_df, code, tags={'code':code}, batch_size=1024)
+                ####################
                 print datetime.datetime.now()
             #    db.stocks[code].insert(json.loads(stock_df.to_json(orient='records')))
             #    db.stocks[code].create_index([('date', pymongo.DESCENDING)], unique=True)
