@@ -24,5 +24,4 @@ def get_delta_dates(start, end):
             delta_list.append(int(temp_date.strftime('%Y%m%d')))
         else:
             break
-    print delta_list
     return delta_list

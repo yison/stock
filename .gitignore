@@ -2,3 +2,9 @@ data/*
 *.pyc
 *.log
 *.out
+bin/
+include/
+lib/
+local/
+pip-selfcheck.json
+share/
