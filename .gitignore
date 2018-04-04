@@ -2,9 +2,13 @@ data/*
 *.pyc
 *.log
 *.out
+*.swp
 bin/
 include/
 lib/
 local/
 pip-selfcheck.json
 share/
+.vimrc
+.ipynb_checkpoints
+__pycache__

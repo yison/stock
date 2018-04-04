@@ -46,7 +46,7 @@ def download_day_data_by_time(code, path, start, end=None):
         try:
             stock_df = ts.get_k_data(code, start=start_time,
                                     end=end_time, retry_count=20)
-            # stock_df = stock_df.set_index(pd.DatetimeIndex(stock_df['date']))
+            stock_df = stock_df.set_index(pd.DatetimeIndex(stock_df['date']))
             #print("@@@@@", stock_df);
             if stock_df is None:
                 #print code + ": timeout after retrying 20 times! reget again!"
