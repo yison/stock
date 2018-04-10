@@ -47,3 +47,15 @@ gflags.DEFINE_string('trading_histroy_day_data_path',
 gflags.DEFINE_string('trading_histroy_day_tracking_file', 
                      'tracking_trading_day.csv',
                      'the file name of tracking day trading')
+gflags.DEFINE_string('trading_histroy_day_tracking_model002_file', 
+                     'tracking_trading_day_model002.csv',
+                     'the file name of tracking day trading model 002')
+gflags.DEFINE_integer('large_amount_threshold_50M', 
+                     50000000,
+                     '50M large amount threshold of day trading')
+gflags.DEFINE_integer('large_amount_threshold_20M', 
+                     20000000,
+                     '20M large amount threshold of day trading')
+gflags.DEFINE_integer('large_amount_threshold_880k', 
+                     880000,
+                     '880k large amount threshold of day trading')

@@ -8,6 +8,7 @@ import gflags
 import flags
 import datetime
 import csv
+from models import tracking_model_002
 
 FLAGS = gflags.FLAGS
 
@@ -170,17 +171,27 @@ if __name__=="__main__":
         #'2018-03-14',
         #'2018-03-15',
         #'2018-03-16',
-        day
+        '2018-04-09',
+        #day
     ]
     for day in day_list:
         day_path = os.path.join(path, day)
         file_mapping_list = utils.find_files(day_path)
-        file_name = FLAGS.trading_histroy_day_tracking_file
-        output_file = os.path.join(path, file_name)
+        #file_name = FLAGS.trading_histroy_day_tracking_file
+        #output_file = os.path.join(path, file_name)
+
+        large_amount_threshold_50M = FLAGS.large_amount_threshold_50M
+        large_amount_threshold_20M = FLAGS.large_amount_threshold_20M
+        large_amount_threshold_880k = FLAGS.large_amount_threshold_880k
+        file_name_model002 = FLAGS.trading_histroy_day_tracking_model002_file
+        output_file = os.path.join(path, file_name_model002)
         for (code, file_path) in file_mapping_list:
             df = pd.read_csv(file_path)
             #res = tracking_model_001(code, df, max_count, day, output_file)
-            res = tracking_model_001_filtered(code, df, max_count, day, output_file)
+            res = tracking_model_002.tracking_model_002(code, df, large_amount_threshold_50M, day, output_file)
+            res = tracking_model_002.tracking_model_002(code, df, large_amount_threshold_20M, day, output_file)
+            res = tracking_model_002.tracking_model_002(code, df, large_amount_threshold_880k, day, output_file)
+
             if len(res) > 0:
                 print (code)
                 print (res)
