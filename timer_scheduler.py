@@ -13,7 +13,9 @@ import logging.handlers
 from apscheduler.schedulers.background import BlockingScheduler 
 from apscheduler.executors.pool import ThreadPoolExecutor, ProcessPoolExecutor
 from models import tracking_model_001
-from downloads import download_day_trading_data
+from downloads.manager import download_stocks_day_trading_data 
+from downloads.manager import download_stocks_day_history_inc_data
+from downloads.manager import download_stocks_day_history_data
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -43,11 +45,41 @@ def download_day_trading_detail_job():
     day = utils.today()
     if utils.is_workday(day):
         path = FLAGS.trading_histroy_day_data_path
-        download_day_trading_data.download_all_stocks_day_trading_data(path, day)
+        download_stocks_day_trading_data(path, day)
         logging.info('download_day_trading_detail_job:Done')
     else:
         logging.info('Today is not workday')
 
+@scheduler.scheduled_job('cron',
+                         day_of_week='0-4', 
+                         hour='19',
+                         minute="0",
+                         second="0")
+def download_day_history_job():
+    logger.info('download_day_history_job')
+    day = utils.today()
+    if utils.is_workday(day):
+        path = FLAGS.history_day_path
+        download_stocks_day_history_data(path)
+        logging.info('download_day_history_job:Done')
+    else:
+        logging.info('Today is not workday')
+
+#TODO: need to consider XD or others
+#@scheduler.scheduled_job('cron',
+#                         day_of_week='0-4', 
+#                         hour='19',
+#                         minute="0",
+#                         second="0")
+#def download_day_history_increment_job():
+#    logger.info('download_day_history_increment_job')
+#    day = utils.today()
+#    if utils.is_workday(day):
+#        path = FLAGS.history_day_path
+#        download_stocks_day_history_inc_data(path, day)
+#        logging.info('download_day_history_increment_job:Done')
+#    else:
+#        logging.info('Today is not workday')
 @scheduler.scheduled_job('cron',
                          day_of_week='0-4', 
                          hour='15',
