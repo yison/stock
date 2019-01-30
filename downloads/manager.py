@@ -41,6 +41,7 @@ def download_day_data_by_time(code, path, mode='w', start=None, end=None):
     count = 5
     while(count > 0):
         try:
+            #stock_df = ts.get_hist_data(code, start=start, end=end, retry_count=20)
             stock_df = ts.get_k_data(code, start=start,
                                     end=end, retry_count=20)
             stock_df = stock_df.set_index(pd.DatetimeIndex(stock_df['date']))
@@ -59,9 +60,9 @@ def download_day_data_by_time(code, path, mode='w', start=None, end=None):
             else:
                 code_path = os.path.join(path, code)
                 if 'a' == mode:
-                    stock_df.to_csv(code_path, mode=mode, header=False)
+                    stock_df.to_csv(code_path, mode=mode, header=False, index=False)
                 else:
-                    stock_df.to_csv(code_path, mode=mode) 
+                    stock_df.to_csv(code_path, mode=mode, index=False) 
                 print("code=%s, Done!" % code)
                 return code
     return None
@@ -118,6 +119,7 @@ def download_stocks_day_trading_data(path, day):
 
 def download_stocks_day_history_data(path):
     stocks_df = get_stocks_with_timeToMarket()
+    ##print ("@@:stocks_df", stocks_df);
     ## here code is index 
     for code, start_time in stocks_df.iteritems():
         res = download_day_data_by_time(code, path, start=start_time)

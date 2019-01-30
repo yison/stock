@@ -17,7 +17,7 @@ if __name__=="__main__":
 
     hist_day_path = FLAGS.history_day_path
     #total:
-    #download_stocks_day_history_data(hist_day_path)
+    download_stocks_day_history_data(hist_day_path)
 
     #increment
     #start_day = '2018-04-12' 

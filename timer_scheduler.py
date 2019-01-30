@@ -13,6 +13,7 @@ import logging.handlers
 from apscheduler.schedulers.background import BlockingScheduler 
 from apscheduler.executors.pool import ThreadPoolExecutor, ProcessPoolExecutor
 from models import tracking_model_001
+from models import tracking_model_002
 from downloads.manager import download_stocks_day_trading_data 
 from downloads.manager import download_stocks_day_history_inc_data
 from downloads.manager import download_stocks_day_history_data
@@ -38,7 +39,7 @@ FLAGS = gflags.FLAGS
 @scheduler.scheduled_job('cron',
                          day_of_week='0-4', 
                          hour='15',
-                         minute="35",
+                         minute="40",
                          second="0")
 def download_day_trading_detail_job():
     logger.info('download_day_trading_detail_job')
@@ -52,8 +53,8 @@ def download_day_trading_detail_job():
 
 @scheduler.scheduled_job('cron',
                          day_of_week='0-4', 
-                         hour='19',
-                         minute="0",
+                         hour='17',
+                         minute="46",
                          second="0")
 def download_day_history_job():
     logger.info('download_day_history_job')
@@ -83,7 +84,7 @@ def download_day_history_job():
 @scheduler.scheduled_job('cron',
                          day_of_week='0-4', 
                          hour='15',
-                         minute="50",
+                         minute="55",
                          second="0")
 def run_tracking_model_001_job():
     logger.info("run_tracking_model_001_job")
@@ -102,6 +103,29 @@ def run_tracking_model_001_job():
             logger.info(res)
     logger.info("run_tracking_model_001_job:Done!")
 
+@scheduler.scheduled_job('cron',
+                         day_of_week='0-4', 
+                         hour='16',
+                         minute="15",
+                         second="0")
+def run_tracking_model_002_job():
+    logger.info("run_tracking_model_002_job")
+    path = FLAGS.trading_histroy_day_data_path
+    day = utils.today()
+    day_path = os.path.join(path, day)
+    file_mapping_list = utils.find_files(day_path)
+
+    large_amount_threshold_50M = FLAGS.large_amount_threshold_50M
+    large_amount_threshold_20M = FLAGS.large_amount_threshold_20M
+    large_amount_threshold_880k = FLAGS.large_amount_threshold_880k
+    file_name = FLAGS.trading_histroy_day_tracking_model002_file
+    output_file = os.path.join(path, file_name)
+    for (code, file_path) in file_mapping_list:
+        df = pd.read_csv(file_path)
+        res = tracking_model_002.tracking_model_002(code, df, large_amount_threshold_50M, day, output_file)
+        res = tracking_model_002.tracking_model_002(code, df, large_amount_threshold_20M, day, output_file)
+        res = tracking_model_002.tracking_model_002(code, df, large_amount_threshold_880k, day, output_file)
+    logger.info("run_tracking_model_002_job:Done")
 
 if __name__=="__main__":
     FLAGS(sys.argv)

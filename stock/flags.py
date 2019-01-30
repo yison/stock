@@ -8,10 +8,24 @@ import gflags
 ##########
 gflags.DEFINE_string('hq_src', 'tencent',
                      'suport source from sina, tencent/qq')
+gflags.DEFINE_string('proxy', 'http://child-prc.intel.com:913',
+                     'proxy')
 gflags.DEFINE_string('eniu', 'eniu',
                      'suport source from eniu')
 gflags.DEFINE_string('eniu_domain', 'https://eniu.com',
                      'domain of eniu')
+gflags.DEFINE_string('stock_type', 'stock',
+                     'api type: stock')
+gflags.DEFINE_string('index_type', 'index',
+                     'api type: index')
+gflags.DEFINE_string('hk_prefix', 'hk',
+                     'prefix: hk')
+gflags.DEFINE_string('sh_prefix', 'sh',
+                     'prefix: sh')
+gflags.DEFINE_string('sz_prefix', 'sz',
+                     'prefix: sz')
+gflags.DEFINE_string('index_prefix', 'index',
+                     'prefix: index')
 gflags.DEFINE_string('host', '10.239.131.215',
                      'host server')
 gflags.DEFINE_string('port', '8086',
@@ -45,6 +59,12 @@ gflags.DEFINE_string('raw_day_path', '/home/cloud001/ly/mygithub/stock/data/raw/
 gflags.DEFINE_string('history_day_path', 
                      '/home/cloud001/ly/mygithub/stock/data/history/day',
                      'day history path')
+gflags.DEFINE_string('pe_history_path', 
+                     '/home/cloud001/ly/mygithub/stock/data/history/pe',
+                     'pe history path')
+gflags.DEFINE_string('pb_history_path', 
+                     '/home/cloud001/ly/mygithub/stock/data/history/pb',
+                     'pb history path')
 gflags.DEFINE_string('trading_histroy_day_data_path', 
                      '/home/cloud001/ly/mygithub/stock/data/trading/history/day',
                      'day trading history data path')
@@ -54,6 +74,9 @@ gflags.DEFINE_string('trading_histroy_day_tracking_file',
 gflags.DEFINE_string('trading_histroy_day_tracking_model002_file', 
                      'tracking_trading_day_model002.csv',
                      'the file name of tracking day trading model 002')
+gflags.DEFINE_string('suf_stock_id', 
+                     'suf_stock_id',
+                     'the suffixes of url is stock id')
 gflags.DEFINE_integer('large_amount_threshold_50M', 
                      50000000,
                      '50M large amount threshold of day trading')
